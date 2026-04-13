@@ -302,39 +302,37 @@ async function saveSuccessfulLogin(ip, username, password) {
     }
 }
 
-if (require.main === module) {
-    // --- New IP Scanning and Login Logic ---
-    async function runNetworkScan(startIp, endIp) { // Removed allCreds parameter
-        const portsToScan = [21, 22, 23, 25, 80, 110, 135, 139, 443, 445, 3389, 8080, 8443, 5900, 5985, 5986, 3306, 5432, 1433, 1521, 27017]; // Common ports: SSH, HTTP, HTTPS, RDP
+// --- New IP Scanning and Login Logic ---
+async function runNetworkScan(startIp, endIp) { // Removed allCreds parameter
+    const portsToScan = [21, 22, 23, 25, 80, 110, 135, 139, 443, 445, 3389, 8080, 8443, 5900, 5985, 5986, 3306, 5432, 1433, 1521, 27017]; // Common ports: SSH, HTTP, HTTPS, RDP
 
-        console.log(`\nStarting network scan from ${startIp} to ${endIp} for ports: ${portsToScan.join(', ')}`);
+    console.log(`\nStarting network scan from ${startIp} to ${endIp} for ports: ${portsToScan.join(', ')}`);
 
-        const startLong = ipToLong(startIp);
-        const endLong = ipToLong(endIp);
+    const startLong = ipToLong(startIp);
+    const endLong = ipToLong(endIp);
 
-        const openHosts = [];
+    const openHosts = [];
 
-        for (let i = startLong; i <= endLong; i++) {
-            const ip = longToIp(i);
-            for (const port of portsToScan) {
-                process.stdout.write(`Scanning ${ip}:${port}...\r`); // Visual feedback
-                const isOpen = await checkPort(ip, port);
-                if (isOpen) {
-                    console.log(`\nFound open port: ${ip}:${port}`);
-                    openHosts.push({ ip, port });
-                    console.log(`Attempting RDP login on ${ip}:${port}...`);
-                    await attemptRDPLogin(ip, port); // No credentials array passed
-                }
+    for (let i = startLong; i <= endLong; i++) {
+        const ip = longToIp(i);
+        for (const port of portsToScan) {
+            process.stdout.write(`Scanning ${ip}:${port}...\r`); // Visual feedback
+            const isOpen = await checkPort(ip, port);
+            if (isOpen) {
+                console.log(`\nFound open port: ${ip}:${port}`);
+                openHosts.push({ ip, port });
+                console.log(`Attempting RDP login on ${ip}:${port}...`);
+                await attemptRDPLogin(ip, port); // No credentials array passed
             }
         }
-        console.log('\nNetwork scan complete.');
-        if (openHosts.length > 0) {
-            console.log('Open hosts found:', openHosts);
-        } else {
-            console.log('No open ports found in the specified range.');
-        }
     }
-
+    console.log('\nNetwork scan complete.');
+    if (openHosts.length > 0) {
+        console.log('Open hosts found:', openHosts);
+    } else {
+        console.log('No open ports found in the specified range.');
+    }
+}
     // Example usage:
     // To scan a /24 subnet (e.g., 192.168.1.1 to 192.168.1.254)
      runNetworkScan('192.168.1.1', '192.168.1.254').catch(console.error);
@@ -350,4 +348,5 @@ if (require.main === module) {
 
     // For demonstration, let's use a small range or a single IP
     runNetworkScan('127.0.0.1', '127.0.0.1').catch(console.error);
-}
+
+module.exports = { runNetworkScan };
